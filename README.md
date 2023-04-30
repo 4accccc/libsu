@@ -2,7 +2,7 @@
 
 [![](https://jitpack.io/v/4accccc/libsu.svg)](https://jitpack.io/#4accccc/libsu)
 
-#How to build your own Magisk(suu)?
+# How to build your own Magisk(suu)?
 
 1.Open /app/build.gradle.kts
 
