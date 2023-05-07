@@ -105,6 +105,6 @@ public final class MainShell {
     }
 
     public static Shell.Job newJob(boolean su, String... cmds) {
-        return new PendingJob(su).add(cmds);
+        return new PendingJob(suu).add(cmds);
     }
 }
