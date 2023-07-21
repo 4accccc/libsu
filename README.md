@@ -8,14 +8,14 @@
 
 # 2.Change
 
-    `val vLibsu = "5.0.5v2"
+    `val vLibsu = "5.0.5"
     implementation("com.github.topjohnwu.libsu:core:${vLibsu}")
     implementation("com.github.topjohnwu.libsu:service:${vLibsu}")
     implementation("com.github.topjohnwu.libsu:nio:${vLibsu}")`
     
 #    to
    
-    `val vLibsu = "5.0.5v2"
+    `val vLibsu = "5.2.0"
     implementation("com.github.4accccc.libsu:core:${vLibsu}")
     implementation("com.github.4accccc.libsu:service:${vLibsu}")
     implementation("com.github.4accccc.libsu:nio:${vLibsu}")`
@@ -44,7 +44,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '5.0.5v2'
+    def libsuVersion = '5.2.0'
 
     // The core module that provides APIs to a shell
     implementation "com.github.4accccc.libsu:core:${libsuVersion}"
