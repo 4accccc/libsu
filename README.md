@@ -1,6 +1,26 @@
 # libsu
 
-[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu)
+[![](https://jitpack.io/v/4accccc/libsu.svg)](https://jitpack.io/#4accccc/libsu)
+
+# How to build your own Magisk(suu)?
+
+1.Open /app/build.gradle.kts
+
+2.Change
+
+    `val vLibsu = "5.0.5"
+    implementation("com.github.topjohnwu.libsu:core:${vLibsu}")
+    implementation("com.github.topjohnwu.libsu:service:${vLibsu}")
+    implementation("com.github.topjohnwu.libsu:nio:${vLibsu}")`
+    
+   to
+   
+    `val vLibsu = "5.0.5"
+    implementation("com.github.4accccc.libsu:core:${vLibsu}")
+    implementation("com.github.4accccc.libsu:service:${vLibsu}")
+    implementation("com.github.4accccc.libsu:nio:${vLibsu}")`
+
+3.Build Magisk with build.py
 
 An Android library providing a complete solution for apps using root permissions.
 
