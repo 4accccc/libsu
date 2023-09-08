@@ -44,7 +44,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '5.2.0'
+    def libsuVersion = '5.2.1'
 
     // The core module that provides APIs to a shell
     implementation "com.github.4accccc.libsu:core:${libsuVersion}"
