@@ -8,14 +8,14 @@
 
 # 2.Change
 
-    `val vLibsu = "5.2.2"
+    `val vLibsu = "5.3.0"
     implementation("com.github.topjohnwu.libsu:core:${vLibsu}")
     implementation("com.github.topjohnwu.libsu:service:${vLibsu}")
     implementation("com.github.topjohnwu.libsu:nio:${vLibsu}")`
     
 #    to
    
-    `val vLibsu = "5.2.2"
+    `val vLibsu = "5.3.0"
     implementation("com.github.4accccc.libsu:core:${vLibsu}")
     implementation("com.github.4accccc.libsu:service:${vLibsu}")
     implementation("com.github.4accccc.libsu:nio:${vLibsu}")`
