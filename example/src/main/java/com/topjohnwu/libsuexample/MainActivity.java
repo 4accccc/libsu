@@ -50,7 +50,6 @@ public class MainActivity extends Activity implements Handler.Callback {
     static {
         Shell.enableVerboseLogging = BuildConfig.DEBUG;
         Shell.setDefaultBuilder(Shell.Builder.create()
-                .setFlags(Shell.FLAG_REDIRECT_STDERR)
                 .setInitializers(ExampleInitializer.class)
         );
     }
@@ -260,6 +259,20 @@ public class MainActivity extends Activity implements Handler.Callback {
         // test_async is defined in R.raw.bashrc, pre-loaded in ExampleInitializer
         binding.testAsync.setOnClickListener(v ->
                 Shell.cmd("test_async").to(consoleList).submit());
+
+        binding.testQueue.setOnClickListener(v -> {
+            Shell.getShell(Shell.EXECUTOR, s -> {
+                Log.i(TAG, "Queue: 1");
+                s.newJob().to(consoleList).add("sleep 1", "echo 1").submit();
+                Log.i(TAG, "Queue: 2");
+                s.newJob().to(consoleList).add("echo 2").exec();
+                Log.i(TAG, "Queue: 3");
+                s.newJob().to(consoleList).add("sleep 1", "echo 3").submit();
+                Log.i(TAG, "Queue: 4");
+                s.newJob().to(consoleList).add("echo 4").submit();
+                Log.i(TAG, "Queue: done");
+            });
+        });
 
         binding.clear.setOnClickListener(v -> binding.console.setText(""));
 

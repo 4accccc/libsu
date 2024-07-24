@@ -20,13 +20,12 @@ import static com.topjohnwu.superuser.Shell.EXECUTOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,7 +35,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
 
-abstract class JobTask extends Shell.Job implements Shell.Task, Closeable {
+abstract class JobTask extends Shell.Job implements Shell.Task {
+
+    static final List<String> UNSET_LIST = new ArrayList<>(0);
 
     static final String END_UUID = UUID.randomUUID().toString();
     static final int UUID_LEN = 36;
@@ -44,74 +45,82 @@ abstract class JobTask extends Shell.Job implements Shell.Task, Closeable {
             .format("__RET=$?;echo %1$s;echo %1$s >&2;echo $__RET;unset __RET\n", END_UUID)
             .getBytes(UTF_8);
 
-    private static final List<String> UNSET_ERR = new ArrayList<>(0);
-
     private final List<ShellInputSource> sources = new ArrayList<>();
+    @Nullable private List<String> out = null;
+    @Nullable private List<String> err = UNSET_LIST;
 
-    boolean redirect;
+    @Nullable protected Executor callbackExecutor;
+    @Nullable protected Shell.ResultCallback callback;
 
-    protected List<String> out;
-    protected List<String> err = UNSET_ERR;
-    protected Executor callbackExecutor;
-    protected Shell.ResultCallback callback;
+    private void setResult(@NonNull ResultImpl result) {
+        if (callback != null) {
+            if (callbackExecutor == null)
+                callback.onResult(result);
+            else
+                callbackExecutor.execute(() -> callback.onResult(result));
+        }
+    }
+
+    private void close() {
+        for (ShellInputSource src : sources)
+            src.close();
+    }
 
     @Override
     public void run(@NonNull OutputStream stdin,
                     @NonNull InputStream stdout,
                     @NonNull InputStream stderr) {
-        boolean noErr = err == UNSET_ERR;
-        ResultImpl result = new ResultImpl();
+        final boolean noOut = out == UNSET_LIST;
+        final boolean noErr = err == UNSET_LIST;
 
-        result.out = out;
-        result.err = noErr ? null : err;
-        if (noErr && redirect)
-            result.err = out;
+        List<String> outList = noOut ? (callback == null ? null : new ArrayList<>()) : out;
+        List<String> errList = noErr ? (Shell.enableLegacyStderrRedirection ? outList : null) : err;
 
-        if (result.out != null && result.out == result.err && !Utils.isSynchronized(result.out)) {
+        if (outList != null && outList == errList && !Utils.isSynchronized(outList)) {
             // Synchronize the list internally only if both lists are the same and are not
             // already synchronized by the user
-            List<String> list = Collections.synchronizedList(result.out);
-            result.out = list;
-            result.err = list;
+            List<String> list = Collections.synchronizedList(outList);
+            outList = list;
+            errList = list;
         }
 
-        FutureTask<Integer> outGobbler =
-                new FutureTask<>(new StreamGobbler.OUT(stdout, result.out));
-        FutureTask<Void> errGobbler = new FutureTask<>(new StreamGobbler.ERR(stderr, result.err));
+        FutureTask<Integer> outGobbler = new FutureTask<>(new StreamGobbler.OUT(stdout, outList));
+        FutureTask<Void> errGobbler = new FutureTask<>(new StreamGobbler.ERR(stderr, errList));
         EXECUTOR.execute(outGobbler);
         EXECUTOR.execute(errGobbler);
 
+        ResultImpl result = new ResultImpl();
         try {
             for (ShellInputSource src : sources)
                 src.serve(stdin);
             stdin.write(END_CMD);
             stdin.flush();
 
-            try {
-                result.code = outGobbler.get();
-                errGobbler.get();
-                result.out = out;
-                result.err = noErr ? null : err;
-            } catch (ExecutionException | InterruptedException e) {
-                throw (InterruptedIOException) new InterruptedIOException().initCause(e);
-            }
-        } catch (IOException e) {
-            if (e instanceof ShellTerminatedException) {
-                result = ResultImpl.SHELL_ERR;
-            } else {
-                Utils.err(e);
-                result = ResultImpl.INSTANCE;
-            }
-        } finally {
-            close();
-            result.callback(callbackExecutor, callback);
+            int code = outGobbler.get();
+            errGobbler.get();
+
+            result.code = code;
+            result.out = outList;
+            result.err = noErr ? null : err;
+        } catch (IOException | ExecutionException | InterruptedException e) {
+            Utils.err(e);
         }
+
+        close();
+        setResult(result);
+    }
+
+    @Override
+    public void shellDied() {
+        close();
+        setResult(new ResultImpl());
     }
 
     @NonNull
     @Override
-    public Shell.Job to(List<String> output) {
-        out = output;
+    public Shell.Job to(List<String> stdout) {
+        out = stdout;
+        err = UNSET_LIST;
         return this;
     }
 
@@ -137,11 +146,5 @@ abstract class JobTask extends Shell.Job implements Shell.Task, Closeable {
         if (cmds != null && cmds.length > 0)
             sources.add(new CommandSource(cmds));
         return this;
-    }
-
-    @Override
-    public void close() {
-        for (ShellInputSource src : sources)
-            src.close();
     }
 }
